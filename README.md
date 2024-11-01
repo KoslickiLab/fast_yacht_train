@@ -1,4 +1,4 @@
-# Fast `yacht train``
+# Fast `yacht train`
 This implements a fast version of yacht train, as of v1.2.3: 
 https://github.com/KoslickiLab/YACHT/releases/tag/v1.2.3
 
@@ -28,6 +28,6 @@ yacht_train -h
 | `file_list`              | A file where each line is a path to a sketch                                                  |
 | `working_directory`      | Where similarity values are written                                                           |
 | `output_filename`        | Output file, this will contain a subset of the paths given as input in file_list              |
-| `--threads`              | Number of threads to use                                                                      |
-| `--passes`               | Number of passes to make. More passes make the program slower but uses more memory            |
-| `--containment_threshold`| Containmnet threshold                                                                         |
+| `threads`                | Number of threads to use                                                                      |
+| `passes`                 | Number of passes to make. More passes make the program slower but uses more memory            |
+| `containment_threshold`  | Containmnet threshold                                                                         |
