@@ -88,21 +88,34 @@ void parse_arguments(int argc, char *argv[]) {
 }
 
 
+void show_arguments() {
+    cout << "Working with the following parameters:" << endl;
+    cout << "**************************************" << endl;
+    cout << "*" << endl;
+    cout << "*    file_list: " << arguments.file_list << endl;
+    cout << "*    working_directory: " << arguments.working_directory << endl;
+    cout << "*    output_filename: " << arguments.output_filename << endl;
+    cout << "*    number_of_threads: " << arguments.number_of_threads << endl;
+    cout << "*    num_of_passes: " << arguments.num_of_passes << endl;
+    cout << "*    containment_threshold: " << arguments.containment_threshold << endl;
+    cout << "*" << endl;
+    cout << "**************************************" << endl;
+}
+
+
 int main(int argc, char *argv[]) {
 
+    // parse command line arguments
     try {
         parse_arguments(argc, argv);
     } catch (const std::runtime_error &e) {
         std::cerr << e.what() << std::endl;
+        cout << "Usage: " << argv[0] << " -h" << endl;
         return 1;
     }
 
-    cout << "file_list: " << arguments.file_list << endl;
-    cout << "working_directory: " << arguments.working_directory << endl;
-    cout << "output_filename: " << arguments.output_filename << endl;
-    cout << "number_of_threads: " << arguments.number_of_threads << endl;
-    cout << "num_of_passes: " << arguments.num_of_passes << endl;
-    cout << "containment_threshold: " << arguments.containment_threshold << endl;
+    // show the arguments
+    show_arguments();
 
     // read the input sketches
     cout << "Reading all sketches in filelist..." << endl;
