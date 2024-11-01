@@ -243,7 +243,7 @@ void compute_intersection_matrix_by_sketches(int sketch_start_index, int sketch_
     
     // process the sketches in the range [sketch_start_index, sketch_end_index)
     for (uint i = sketch_start_index; i < sketch_end_index; i++) {
-        for (uint j = 0; j < sketches[i].size(); j++) {
+        for (int j = 0; j < sketches[i].size(); j++) {
             hash_t hash = sketches[i][j];
             if (hash_index.find(hash) != hash_index.end()) {
                 vector<int> sketch_indices = hash_index[hash];
@@ -267,7 +267,7 @@ void compute_intersection_matrix_by_sketches(int sketch_start_index, int sketch_
     for (int i = sketch_start_index; i < sketch_end_index; i++) {
         for (uint j = 0; j < num_sketches; j++) {
             // skip obvious cases
-            if (i == j) {
+            if ((uint)i == (uint)j) {
                 continue;
             }
 
