@@ -242,12 +242,12 @@ void compute_index_from_sketches() {
 void compute_intersection_matrix_by_sketches(int sketch_start_index, int sketch_end_index, int thread_id, string out_dir, int pass_id, int negative_offset) {
     
     // process the sketches in the range [sketch_start_index, sketch_end_index)
-    for (int i = sketch_start_index; i < sketch_end_index; i++) {
-        for (int j = 0; j < sketches[i].size(); j++) {
+    for (uint i = sketch_start_index; i < sketch_end_index; i++) {
+        for (uint j = 0; j < sketches[i].size(); j++) {
             hash_t hash = sketches[i][j];
             if (hash_index.find(hash) != hash_index.end()) {
                 vector<int> sketch_indices = hash_index[hash];
-                for (int k = 0; k < sketch_indices.size(); k++) {
+                for (uint k = 0; k < sketch_indices.size(); k++) {
                     intersectionMatrix[i-negative_offset][sketch_indices[k]]++;
                 }
             }
@@ -265,7 +265,7 @@ void compute_intersection_matrix_by_sketches(int sketch_start_index, int sketch_
 
     // only write the values if larger than the threshold
     for (int i = sketch_start_index; i < sketch_end_index; i++) {
-        for (int j = 0; j < num_sketches; j++) {
+        for (uint j = 0; j < num_sketches; j++) {
             // skip obvious cases
             if (i == j) {
                 continue;
@@ -316,7 +316,7 @@ void compute_intersection_matrix() {
     for (int pass_id = 0; pass_id < arguments.num_of_passes; pass_id++) {
         // set zeros in the intersection matrix
         for (int i = 0; i < num_sketches_each_pass+1; i++) {
-            for (int j = 0; j < num_sketches; j++) {
+            for (uint j = 0; j < num_sketches; j++) {
                 intersectionMatrix[i][j] = 0;
             }
         }
