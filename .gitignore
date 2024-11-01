@@ -1,3 +1,4 @@
 src/*.o
 bin/*
 *.o
+.vscode/settings.json
