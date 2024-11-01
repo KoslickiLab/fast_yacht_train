@@ -49,6 +49,8 @@ int count_empty_sketch = 0;
 mutex mutex_count_empty_sketch;
 vector<int> empty_sketch_ids;
 int ** intersectionMatrix;
+vector<vector<int>> similars;
+
 
 
 
@@ -296,6 +298,7 @@ void compute_intersection_matrix_by_sketches(int sketch_start_index, int sketch_
             }
 
             outfile << i << "," << j << "," << jaccard << "," << containment_i_in_j << "," << containment_j_in_i << endl;
+            similars[i].push_back(j);
         }
     }
 
@@ -311,6 +314,11 @@ void compute_intersection_matrix() {
     intersectionMatrix = new int*[num_sketches_each_pass + 1];
     for (int i = 0; i < num_sketches_each_pass + 1; i++) {
         intersectionMatrix[i] = new int[num_sketches];
+    }
+
+    // allocate memory for the similars
+    for (int i = 0; i < num_sketches; i++) {
+        similars.push_back(vector<int>());
     }
 
     for (int pass_id = 0; pass_id < arguments.num_of_passes; pass_id++) {
@@ -354,6 +362,61 @@ void compute_intersection_matrix() {
 
 
 
+
+void do_yacht_train() {
+
+    cout << "Starting yacht train..." << endl;
+    
+    vector<int> selected_genome_ids;
+    vector<bool> genome_id_to_exclude(num_sketches, false);
+
+    // sort the genome ids by size
+    sort(genome_id_size_pairs.begin(), genome_id_size_pairs.end(), [](const pair<int, int>& a, const pair<int, int>& b) {
+        return a.second < b.second;
+    });
+    
+    for (int i = 0; i < num_sketches; i++) {
+        
+        cout << "Processing " << i << "..." << '\r';
+        int genome_id_this = genome_id_size_pairs[i].first;
+        int size_this = genome_id_size_pairs[i].second;
+        bool select_this = true;
+        
+        // show my size
+        for (int j = 0; j < similars[genome_id_this].size(); j++) {
+            int genome_id_other = similars[genome_id_this][j];
+            if (genome_id_to_exclude[genome_id_other]) {
+                continue;
+            }
+            int size_other = sketches[genome_id_other].size();
+            if (size_other >= size_this) {
+                select_this = false;
+                break;
+            }
+        }
+        if (select_this) {
+            selected_genome_ids.push_back(genome_id_this);
+        } else {
+            genome_id_to_exclude[genome_id_this] = true;
+        }
+    }
+
+    cout << "Writing to output file.." << endl; 
+
+    // write the selected genome ids to file
+    ofstream outfile(arguments.output_filename);
+    for (int i = 0; i < selected_genome_ids.size(); i++) {
+        int genome_id = selected_genome_ids[i];
+        string sketch_name = sketch_names[genome_id];
+        outfile << sketch_name << endl;
+    }
+    outfile.close();
+
+}
+
+
+
+
 int main(int argc, char *argv[]) {
 
     // *********************************************************
@@ -373,7 +436,6 @@ int main(int argc, char *argv[]) {
     // *********************************************************
     // ************     read the input sketches     ************
     // *********************************************************
-
     auto read_start = chrono::high_resolution_clock::now();
     cout << "Reading all sketches in filelist using all " << arguments.number_of_threads << " threads..." << endl;
     get_sketch_names(arguments.file_list);
@@ -414,6 +476,18 @@ int main(int argc, char *argv[]) {
     auto mat_computation_end = chrono::high_resolution_clock::now();
     auto mat_computation_duration = chrono::duration_cast<chrono::milliseconds>(mat_computation_end - mat_computation_start);
     cout << "Time taken to compute intersection matrix: " << mat_computation_duration.count() << " milliseconds" << endl;
+
+
+
+    // **********************************************************************
+    // *************                yacht train                 *************
+    // **********************************************************************
+    auto yacht_train_start = chrono::high_resolution_clock::now();
+    cout << "Starting yacht train..." << endl;
+    do_yacht_train();
+    auto yacht_train_end = chrono::high_resolution_clock::now();
+    auto yacht_train_duration = chrono::duration_cast<chrono::milliseconds>(yacht_train_end - yacht_train_start);
+    cout << "Time taken to do yacht train: " << yacht_train_duration.count() << " milliseconds" << endl;
 
 
     return 0;

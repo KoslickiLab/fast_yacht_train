@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -O3 
+CXXFLAGS = -std=c++17 -Wsign-compare -Wall -O3 -Wsign-compare
 
 # Directories
 SRC_DIR = src
