@@ -3,6 +3,8 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <fstream>
+#include <stdexcept>
 
 using namespace std;
 
@@ -21,6 +23,24 @@ typedef Arguments Arguments;
 
 
 Arguments arguments;
+std::vector<std::string> sketch_names;
+uint num_sketches;
+
+
+
+void get_sketch_names(const std::string& filelist) {
+    // the filelist is a file, where each line is a path to a sketch file
+    std::ifstream file(filelist);
+    if (!file.is_open()) {
+        std::cerr << "Could not open the filelist: " << filelist << std::endl;
+        return;
+    }
+    std::string line;
+    while (std::getline(file, line)) {
+        sketch_names.push_back(line);
+    }
+    num_sketches = sketch_names.size();
+}
 
 
 void parse_arguments(int argc, char *argv[]) {
@@ -38,14 +58,17 @@ void parse_arguments(int argc, char *argv[]) {
         .store_into(arguments.output_filename);
     parser.add_argument("-t", "--threads")
         .help("number of threads")
+        .scan<'i', int>()
         .default_value(1)
         .store_into(arguments.number_of_threads);
     parser.add_argument("-p", "--passes")
         .help("number of passes")
+        .scan<'i', int>()
         .default_value(1)
         .store_into(arguments.num_of_passes);
     parser.add_argument("-c", "--containment_threshold")
         .help("containment threshold")
+        .scan<'g', double>()
         .default_value(0.9)
         .store_into(arguments.containment_threshold);
     parser.parse_args(argc, argv);
@@ -61,14 +84,6 @@ void parse_arguments(int argc, char *argv[]) {
     if (arguments.containment_threshold < 0.0 || arguments.containment_threshold > 1.0) {
         throw std::runtime_error("containment threshold must be between 0.0 and 1.0");
     }
-
-    // store the arguments in the arguments struct
-    arguments.file_list = parser.get<std::string>("file_list");
-    arguments.working_directory = parser.get<std::string>("working_directory");
-    arguments.output_filename = parser.get<std::string>("output_filename");
-    arguments.number_of_threads = parser.get<uint>("threads");
-    arguments.num_of_passes = parser.get<uint>("passes");
-    arguments.containment_threshold = parser.get<double>("containment_threshold");
 
 }
 
@@ -88,6 +103,10 @@ int main(int argc, char *argv[]) {
     cout << "number_of_threads: " << arguments.number_of_threads << endl;
     cout << "num_of_passes: " << arguments.num_of_passes << endl;
     cout << "containment_threshold: " << arguments.containment_threshold << endl;
+
+    // read the input sketches
+    cout << "Reading all sketches in filelist..." << endl;
+    get_sketch_names(arguments.file_list);
 
     return 0;
 }
