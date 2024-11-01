@@ -44,6 +44,7 @@ std::vector<std::string> sketch_names;
 uint num_sketches;
 vector<vector<hash_t>> sketches;
 vector<pair<int, int>> genome_id_size_pairs;
+unordered_map<hash_t, vector<int>> hash_index;
 int count_empty_sketch = 0;
 mutex mutex_count_empty_sketch;
 vector<int> empty_sketch_ids;
@@ -95,7 +96,7 @@ void read_sketches_one_chunk(int start_index, int end_index) {
 
 
 void read_sketches() {
-    for (int i = 0; i < num_sketches; i++) {
+    for (uint i = 0; i < num_sketches; i++) {
         sketches.push_back( vector<hash_t>() );
         genome_id_size_pairs.push_back({-1, 0});
     }
@@ -191,9 +192,59 @@ void show_arguments() {
 }
 
 
+void show_empty_sketches() {
+    cout << "Number of empty sketches: " << count_empty_sketch << endl;
+    if (count_empty_sketch == 0) {
+        return;
+    }
+    cout << "Empty sketch ids: ";
+    for (int i : empty_sketch_ids) {
+        cout << i << " ";
+    }
+    cout << endl;
+}
+
+
+void compute_index_from_sketches() {
+    // create the index using all the hashes
+    for (int i = 0; i < sketches.size(); i++) {
+        for (int j = 0; j < sketches[i].size(); j++) {
+            hash_t hash = sketches[i][j];
+            if (hash_index.find(hash) == hash_index.end()) {
+                hash_index[hash] = vector<int>();
+            }
+            hash_index[hash].push_back(i);
+        }
+    }
+
+    size_t num_hashes = hash_index.size();
+
+    // remove the hashes that only appear in one sketch
+    vector<hash_t> hashes_to_remove;
+    for (auto it = hash_index.begin(); it != hash_index.end(); it++) {
+        if (it->second.size() == 1) {
+            hashes_to_remove.push_back(it->first);
+        }
+    }
+    for (int i = 0; i < hashes_to_remove.size(); i++) {
+        hash_index.erase(hashes_to_remove[i]);
+    }
+
+    size_t num_hashes_after_removal = hash_index.size();
+
+    cout << "Total number of distinct hashes: " << num_hashes << endl;
+    cout << "Total number of distinct hashes that appear in only one sketch: " << num_hashes - num_hashes_after_removal << endl;
+    cout << "Size of the index: " << num_hashes_after_removal << endl;
+
+}
+
+
+
 int main(int argc, char *argv[]) {
 
-    // parse command line arguments
+    // *********************************************************
+    // *****           parse command line arguments       ******
+    // *********************************************************
     try {
         parse_arguments(argc, argv);
     } catch (const std::runtime_error &e) {
@@ -205,9 +256,12 @@ int main(int argc, char *argv[]) {
     // show the arguments
     show_arguments();
 
-    // read the input sketches
+    // *********************************************************
+    // ************     read the input sketches     ************
+    // *********************************************************
+
     auto read_start = chrono::high_resolution_clock::now();
-    cout << "Reading all sketches in filelist using all " << arguments.number_of_threads << " threads" << endl;
+    cout << "Reading all sketches in filelist using all " << arguments.number_of_threads << " threads..." << endl;
     get_sketch_names(arguments.file_list);
     cout << "Total number of sketches to read: " << num_sketches << endl;
     read_sketches();
@@ -215,17 +269,25 @@ int main(int argc, char *argv[]) {
     
     cout << "All sketches read" << endl;
     
-    // show empty sketch ids
-    cout << "Number of empty sketches: " << count_empty_sketch << endl;
-    cout << "Empty sketch ids: ";
-    for (int i : empty_sketch_ids) {
-        cout << i << " ";
-    }
-    cout << endl;
+    // show empty sketches
+    show_empty_sketches();
 
-    // show the time taken to read the sketches
+    // show time taken to read all sketches
     auto read_duration = chrono::duration_cast<chrono::milliseconds>(read_end - read_start);
     cout << "Time taken to read all sketches: " << read_duration.count() << " milliseconds" << endl;
+
+
+
+
+    // ****************************************************************
+    // ************* reading complete, now creating index *************
+    // ****************************************************************
+    auto index_build_start = chrono::high_resolution_clock::now();
+    cout << "Building index from sketches..." << endl;
+    compute_index_from_sketches();
+    auto index_build_end = chrono::high_resolution_clock::now();
+    auto index_build_duration = chrono::duration_cast<chrono::milliseconds>(index_build_end - index_build_start);
+    cout << "Time taken to build index: " << index_build_duration.count() << " milliseconds" << endl;
 
 
     return 0;
