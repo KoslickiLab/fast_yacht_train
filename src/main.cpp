@@ -1,12 +1,28 @@
 #include "argparse.hpp"
+#include "json.hpp"
 
 #include <iostream>
 #include <vector>
 #include <string>
 #include <fstream>
 #include <stdexcept>
+#include <thread>
+#include <mutex>
+#include <algorithm>
+#include <utility>
+#include <set>
+#include <map>
+#include <unordered_map>
+#include <unordered_set>
+#include <cmath>
+#include <limits>
+#include <iomanip>
+#include <sstream>
+#include <chrono>
+#include <random>
 
 using namespace std;
+using json = nlohmann::json;
 
 
 struct Arguments {
@@ -20,12 +36,84 @@ struct Arguments {
 
 
 typedef Arguments Arguments;
+typedef unsigned long long int hash_t;
 
 
 Arguments arguments;
 std::vector<std::string> sketch_names;
 uint num_sketches;
+vector<vector<hash_t>> sketches;
+vector<pair<int, int>> genome_id_size_pairs;
+int count_empty_sketch = 0;
+mutex mutex_count_empty_sketch;
+vector<int> empty_sketch_ids;
 
+
+
+
+vector<hash_t> read_min_hashes(const string& json_filename) {
+    
+    // Open the JSON file
+    ifstream inputFile(json_filename);
+
+    // Check if the file is open
+    if (!inputFile.is_open()) {
+        cerr << "Could not open the file!" << endl;
+        return {};
+    }
+
+    // Parse the JSON data
+    json jsonData;
+    inputFile >> jsonData;
+
+    // Access and print values
+    vector<hash_t> min_hashes = jsonData[0]["signatures"][0]["mins"];
+
+    // Close the file
+    inputFile.close();
+
+    return min_hashes;
+}
+
+
+
+
+void read_sketches_one_chunk(int start_index, int end_index) {
+    for (int i = start_index; i < end_index; i++) {
+        auto min_hashes_genome_name = read_min_hashes(sketch_names[i]);
+        sketches[i] = min_hashes_genome_name;
+        if (sketches[i].size() == 0) {
+            mutex_count_empty_sketch.lock();
+            count_empty_sketch++;
+            empty_sketch_ids.push_back(i);
+            mutex_count_empty_sketch.unlock();
+        }
+        genome_id_size_pairs[i] = {i, sketches[i].size()};
+    }
+}
+
+
+
+void read_sketches() {
+    for (int i = 0; i < num_sketches; i++) {
+        sketches.push_back( vector<hash_t>() );
+        genome_id_size_pairs.push_back({-1, 0});
+    }
+
+    int num_threads = arguments.number_of_threads;
+
+    int chunk_size = num_sketches / num_threads;
+    vector<thread> threads;
+    for (int i = 0; i < num_threads; i++) {
+        int start_index = i * chunk_size;
+        int end_index = (i == num_threads - 1) ? num_sketches : (i + 1) * chunk_size;
+        threads.push_back(thread(read_sketches_one_chunk, start_index, end_index));
+    }
+    for (int i = 0; i < num_threads; i++) {
+        threads[i].join();
+    }
+    
+}
 
 
 void get_sketch_names(const std::string& filelist) {
@@ -118,8 +206,27 @@ int main(int argc, char *argv[]) {
     show_arguments();
 
     // read the input sketches
-    cout << "Reading all sketches in filelist..." << endl;
+    auto read_start = chrono::high_resolution_clock::now();
+    cout << "Reading all sketches in filelist using all " << arguments.number_of_threads << " threads" << endl;
     get_sketch_names(arguments.file_list);
+    cout << "Total number of sketches to read: " << num_sketches << endl;
+    read_sketches();
+    auto read_end = chrono::high_resolution_clock::now();
+    
+    cout << "All sketches read" << endl;
+    
+    // show empty sketch ids
+    cout << "Number of empty sketches: " << count_empty_sketch << endl;
+    cout << "Empty sketch ids: ";
+    for (int i : empty_sketch_ids) {
+        cout << i << " ";
+    }
+    cout << endl;
+
+    // show the time taken to read the sketches
+    auto read_duration = chrono::duration_cast<chrono::milliseconds>(read_end - read_start);
+    cout << "Time taken to read all sketches: " << read_duration.count() << " milliseconds" << endl;
+
 
     return 0;
 }
