@@ -207,8 +207,8 @@ void show_empty_sketches() {
 
 void compute_index_from_sketches() {
     // create the index using all the hashes
-    for (int i = 0; i < sketches.size(); i++) {
-        for (int j = 0; j < sketches[i].size(); j++) {
+    for (uint i = 0; i < sketches.size(); i++) {
+        for (uint j = 0; j < sketches[i].size(); j++) {
             hash_t hash = sketches[i][j];
             if (hash_index.find(hash) == hash_index.end()) {
                 hash_index[hash] = vector<int>();
@@ -226,7 +226,7 @@ void compute_index_from_sketches() {
             hashes_to_remove.push_back(it->first);
         }
     }
-    for (int i = 0; i < hashes_to_remove.size(); i++) {
+    for (uint i = 0; i < hashes_to_remove.size(); i++) {
         hash_index.erase(hashes_to_remove[i]);
     }
 
