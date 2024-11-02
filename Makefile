@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -Wsign-compare -Wall -O3 -Wsign-compare -lz
+CXXFLAGS = -std=c++17 -Wsign-compare -Wall -O3 -Wsign-compare
 
 # Directories
 SRC_DIR = src
@@ -24,7 +24,7 @@ $(BIN_DIR):
 
 # build the object files
 $(OBJ_FILES): %.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@ -lz
 
 # build the target executable
 $(TARGET): $(OBJ_FILES) | $(BIN_DIR)
